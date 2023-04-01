@@ -48,7 +48,7 @@ class App extends Component {
           `${BASE}?q=${value}&page=${page}&key=${KEY}&${FILTER}`
         );
         if (response.data.hits.length > 0) {
-          Notify.success(`Success! We found you pictures of ${value}`);
+          Notify.success(`Success! We found you pictures of ${value} :)`);
           this.setState(prevState => ({
             photos: [...prevState.photos, ...response.data.hits],
           }));
