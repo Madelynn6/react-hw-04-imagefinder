@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Notify } from 'notiflix/build/notiflix-notify-aio';
 import { MagnifyingGlass } from 'react-loader-spinner';
@@ -9,35 +9,28 @@ import ImageGalleryItem from './ImageGalleryItem/ImageGalleryItem';
 import Button from './Button/Button';
 import Modal from './Modal/Modal';
 
-class App extends Component {
-  state = {
-    photos: [],
-    value: '',
-    prevValue: '',
-    isLoading: false,
-    page: 1,
-    showModal: false,
-    selectedImage: null,
+const App = () => {
+  const [photos, setPhotos] = useState([]);
+  const [value, setValue] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [page, setPage] = useState(1);
+  const [showModal, setShowModal] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+
+  const handleSearch = query => {
+    setValue(query);
+    setPhotos([]);
+    setPage(1);
   };
 
-  handleSearch = query => {
-    if (query !== this.state.prevValue) {
-      this.setState({ value: query, photos: [], page: 1, prevQuery: query });
+  useEffect(() => {
+    if (value) {
+      fetchImages(value, page);
     }
-  };
+  }, [value, page]);
 
-  async componentDidUpdate(prevProps, prevState) {
-    const { value, page } = this.state;
-    if (value !== prevState.value || prevState.page !== page) {
-      await this.fetchImages();
-    }
-  }
-
-  fetchImages = async () => {
-    this.setState({
-      isLoading: true,
-    });
-    const { value, page } = this.state;
+  const fetchImages = async (value, page) => {
+    setIsLoading(true);
     const KEY = '33147468-be6e810c2e40f64bef77a2416';
     const BASE = 'https://pixabay.com/api/';
     const FILTER = 'image_type=photo&orientation=horizontal&per_page=12';
@@ -49,63 +42,48 @@ class App extends Component {
         );
         if (response.data.hits.length > 0) {
           Notify.success(`Success! We found you pictures of ${value} :)`);
-          this.setState(prevState => ({
-            photos: [...prevState.photos, ...response.data.hits],
-          }));
+          setPhotos(photos => [...photos, ...response.data.hits]);
         } else if (page > 1) {
           Notify.info('Sorry, there are no more matches.');
         } else {
           Notify.failure("Sorry, we couldn't find any matches.");
         }
       } catch (error) {
-        this.setState({ error });
         console.log(error);
       } finally {
-        this.setState({ isLoading: false });
+        setIsLoading(false);
       }
     }, 500);
   };
 
-  handleLoadMore = () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+  const handleLoadMore = () => {
+    setPage(page => page + 1);
   };
 
-  onImgClick = image => {
-    this.setState({
-      showModal: true,
-      selectedImage: image,
-    });
-    console.log(image);
+  const onImgClick = image => {
+    setShowModal(true);
+    setSelectedImage(image);
   };
 
-  onImgClose = () => {
-    this.setState({
-      showModal: false,
-      selectedImage: null,
-    });
+  const onImgClose = () => {
+    setShowModal(false);
+    setSelectedImage(null);
   };
 
-  render() {
-    const { photos, isLoading, showModal, selectedImage } = this.state;
-    return (
-      <div className="box">
-        <SearchBar onSubmit={this.handleSearch} />
-        <ImageGallery>
-          <ImageGalleryItem
-            photos={photos}
-            onClick={this.onImgClick}
-          ></ImageGalleryItem>
-        </ImageGallery>
-        {isLoading && <MagnifyingGlass />}
-        {photos.length > 0 && !isLoading && (
-          <Button onClick={this.handleLoadMore} />
-        )}
-        {showModal && <Modal image={selectedImage} onClose={this.onImgClose} />}
-      </div>
-    );
-  }
-}
+  return (
+    <div className="box">
+      <SearchBar onSubmit={handleSearch} />
+      <ImageGallery>
+        <ImageGalleryItem
+          photos={photos}
+          onClick={onImgClick}
+        ></ImageGalleryItem>
+      </ImageGallery>
+      {isLoading && <MagnifyingGlass />}
+      {photos.length > 0 && !isLoading && <Button onClick={handleLoadMore} />}
+      {showModal && <Modal image={selectedImage} onClose={onImgClose} />}
+    </div>
+  );
+};
 
 export default App;
